@@ -37,11 +37,11 @@
         'padding:8px 14px;display:flex;align-items:center;justify-content:center;'+
         'letter-spacing:1px;text-transform:uppercase;';
 
-      // --- Create floating Roll button ---
+      // --- Create floating Roll button (large, round) ---
       var fab=document.createElement('button');
       fab.textContent='▶ ROLL';
       fab.id='fab-roll';
-      fab.style.cssText=fabCSS+'bottom:60px;right:14px;';
+      fab.style.cssText=fabCSS+'bottom:60px;right:14px;width:72px;height:72px;border-radius:50%;font-size:14px;padding:0;';
       document.body.appendChild(fab);
 
       fab.addEventListener('click',function(e){
@@ -49,9 +49,9 @@
         if(origRoll) origRoll.click();
       });
 
-      // --- Restyle settings gear to match ---
+      // --- Restyle settings gear (small, round) ---
       if(origSettings){
-        origSettings.style.cssText+=';'+fabCSS+'bottom:14px;right:14px;font-size:16px;padding:6px 10px;';
+        origSettings.style.cssText+=';'+fabCSS+'bottom:14px;right:14px;width:36px;height:36px;border-radius:50%;font-size:16px;padding:0;';
         origSettings.textContent='⚙';
         makeDraggable(origSettings);
       }
