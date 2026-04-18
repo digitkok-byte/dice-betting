@@ -16,12 +16,12 @@
   --safe-bottom:env(safe-area-inset-bottom,0px);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{height:100%;overflow:hidden}
+html,body{min-height:100%}
 body{
   background:#050a05;font-family:'JetBrains Mono',monospace;color:var(--text-primary);
-  height:100%;overflow-y:auto;overflow-x:hidden;
+  overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
-  padding-bottom:var(--safe-bottom);
+  padding-bottom:calc(16px + var(--safe-bottom));
 }
 
 /* === Scanlines overlay on body === */
