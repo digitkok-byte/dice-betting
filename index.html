@@ -6,10 +6,197 @@
   <title>DICE TERMINAL // v1.0</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
+  // Set defaults BEFORE React reads them
+  window.TWEAK_DEFAULTS = {
+    phosphor: "phosphor",
+    crtIntensity: 45,
+    font: "jetbr",
+    bezel: true,
+    autoSpeed: 600,
+    sounds: true,
+    diceAnim: "3d",
+    lang: "ru"
+  };
+  // Apply defaults to localStorage if first visit
+  (function(){
+    try {
+      var saved = localStorage.getItem("dice_tweaks");
+      if (!saved) {
+        localStorage.setItem("dice_tweaks", JSON.stringify(window.TWEAK_DEFAULTS));
+      } else {
+        // Ensure lang key exists for existing users
+        var obj = JSON.parse(saved);
+        if (!obj.lang) { obj.lang = "ru"; localStorage.setItem("dice_tweaks", JSON.stringify(obj)); }
+      }
+    } catch(e){}
+  })();
+
   document.addEventListener('DOMContentLoaded',function(){
     if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();
       try{Telegram.WebApp.setHeaderColor('#05080B');Telegram.WebApp.setBackgroundColor('#05080B')}catch(e){}}
   });
+  </script>
+  <script>
+  // Russian localization + language toggle + floating buttons
+  (function(){
+    var TR = {
+      "CURRENT BALANCE": "ТЕКУЩИЙ БАЛАНС",
+      "SESSION P/L:": "СЕССИЯ P/L:",
+      "rolls": "бросков",
+      "roll": "бросок",
+      "Bet Target": "Цель ставки",
+      "Sum of two dice": "Сумма двух кубиков",
+      "ways": "способов",
+      "payout": "выплата",
+      "PRESETS": "ПРЕСЕТЫ",
+      "ANY": "ЛЮБАЯ",
+      "LOW 2-6": "НИЗ 2-6",
+      "HIGH 8-12": "ВЕРХ 8-12",
+      "SEVEN": "СЕМЁРКА",
+      "SNAKE 2": "ЗМЕЙКА 2",
+      "BOXCAR 12": "ВАГОН 12",
+      "EVENS": "ЧЁТНЫЕ",
+      "ODDS": "НЕЧЁТНЫЕ",
+      "Wager amount": "Сумма ставки",
+      "ROLL DICE": "БРОСИТЬ",
+      "AUTO-BET": "АВТО",
+      "Auto-Bet Strategy": "Стратегия авто-ставок",
+      "Custom": "Своя",
+      "IDLE": "ОЖИДАНИЕ",
+      "RUNNING": "РАБОТАЕТ",
+      "BASE BET": "БАЗОВАЯ СТАВКА",
+      "ON WIN ×%": "ПРИ ВЫИГРЫШЕ ×%",
+      "ON LOSS ×%": "ПРИ ПРОИГРЫШЕ ×%",
+      "RESET ON WIN": "СБРОС ПРИ ВЫИГРЫШЕ",
+      "RESET ON LOSS": "СБРОС ПРИ ПРОИГРЫШЕ",
+      "STOP: # of rolls": "СТОП: кол-во бросков",
+      "STOP ON PROFIT": "СТОП ПО ПРИБЫЛИ",
+      "STOP ON LOSS": "СТОП ПО УБЫТКУ",
+      "PRESET · MARTINGALE": "МАРТИНГЕЙЛ",
+      "PRESET · REVERSE": "РЕВЕРС",
+      "PRESET · FLAT": "ФИКСИР.",
+      "Live Stats": "Статистика",
+      "session": "сессия",
+      "WINS": "ВЫИГРЫШИ",
+      "LOSSES": "ПРОИГРЫШИ",
+      "WIN RATE": "% ПОБЕД",
+      "PROFIT": "ПРИБЫЛЬ",
+      "BIGGEST WIN": "МАКС. ВЫИГРЫШ",
+      "BIGGEST LOSS": "МАКС. ПРОИГРЫШ",
+      "WIN STREAK": "СЕРИЯ ПОБЕД",
+      "LOSS STREAK": "СЕРИЯ ПРОИГР.",
+      "Equity Curve": "Кривая баланса",
+      "balance over rolls": "баланс по броскам",
+      "Roll Log": "Журнал бросков",
+      "CLEAR": "ОЧИСТИТЬ",
+      "+500 FUNDS": "+500",
+      "RESET": "СБРОС",
+      "DICE": "КОСТИ",
+      "BET": "СТАВКА",
+      "DELTA": "ДЕЛЬТА",
+      "BAL": "БАЛАНС",
+      "No rolls yet. Place a bet to begin.": "Пока нет бросков. Сделайте ставку.",
+      "Awaiting input": "Ожидание ставки",
+      "Insufficient balance": "Недостаточно средств",
+      "Bet must be > 0": "Ставка должна быть > 0",
+      "Select at least one sum": "Выберите хотя бы одну сумму",
+      "Next bet:": "След. ставка:",
+      "Need to hit:": "Нужно выбить:",
+      "sums": "суммы",
+      "EV/roll:": "EV/бросок:",
+      "ONLINE": "ОНЛАЙН",
+      "RNG: LOCAL": "ГСЧ: ЛОКАЛЬНЫЙ",
+      "PHOSPHOR": "ФОСФОР",
+      "CRT INTENSITY": "ЯРКОСТЬ CRT",
+      "FONT": "ШРИФТ",
+      "BEZEL": "РАМКА",
+      "AUTO SPEED (ms)": "СКОРОСТЬ АВТО (мс)",
+      "SOUNDS": "ЗВУКИ",
+      "DICE STYLE": "СТИЛЬ КУБИКОВ",
+      "ON": "ВКЛ",
+      "OFF": "ВЫКЛ"
+    };
+
+    function getLang(){
+      try{var s=JSON.parse(localStorage.getItem("dice_tweaks")||"{}");return s.lang||"ru";}catch(e){return "ru";}
+    }
+
+    function translateNode(node){
+      if(node.nodeType===3){
+        var txt=node.textContent;
+        for(var en in TR){
+          if(txt.indexOf(en)>-1) txt=txt.split(en).join(TR[en]);
+        }
+        node.textContent=txt;
+        return;
+      }
+      if(node.nodeType===1){
+        // Skip script/style
+        var tag=node.tagName;
+        if(tag==='SCRIPT'||tag==='STYLE'||tag==='INPUT'||tag==='TEXTAREA') return;
+        // Translate placeholder
+        if(node.placeholder){for(var en in TR){if(node.placeholder.indexOf(en)>-1) node.placeholder=node.placeholder.split(en).join(TR[en]);}}
+        var kids=node.childNodes;
+        for(var i=0;i<kids.length;i++) translateNode(kids[i]);
+      }
+    }
+
+    function applyTranslation(){
+      if(getLang()!=='ru') return;
+      var content=document.querySelector('.content');
+      if(content) translateNode(content);
+    }
+
+    // Add language toggle to settings panel
+    function addLangToggle(){
+      var settingsPanel=null;
+      var panels=document.querySelectorAll('.card,.panel,.tweaks');
+      panels.forEach(function(p){
+        if(p.textContent.indexOf('PHOSPHOR')>-1||p.textContent.indexOf('CRT')>-1||p.textContent.indexOf('BEZEL')>-1)
+          settingsPanel=p;
+      });
+      if(!settingsPanel) return false;
+      // Check if already added
+      if(settingsPanel.querySelector('#lang-toggle')) return true;
+      var row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding:6px 0;border-top:1px solid rgba(77,255,42,0.15);';
+      var label=document.createElement('span');
+      label.textContent='LANGUAGE / ЯЗЫК';
+      label.style.cssText='font-size:11px;color:var(--text-secondary,#8a9a8a);text-transform:uppercase;letter-spacing:1px;';
+      var btnEn=document.createElement('button');
+      btnEn.textContent='EN';
+      btnEn.id='lang-toggle';
+      btnEn.style.cssText='margin-left:auto;margin-right:4px;padding:4px 10px;font-size:11px;cursor:pointer;border-radius:4px;border:1px solid rgba(77,255,42,0.3);background:transparent;color:var(--text-primary,#ccc);font-family:inherit;';
+      var btnRu=document.createElement('button');
+      btnRu.textContent='RU';
+      btnRu.style.cssText='padding:4px 10px;font-size:11px;cursor:pointer;border-radius:4px;border:1px solid rgba(77,255,42,0.3);background:transparent;color:var(--text-primary,#ccc);font-family:inherit;';
+      var cur=getLang();
+      if(cur==='ru') btnRu.style.background='rgba(77,255,42,0.15)';
+      else btnEn.style.background='rgba(77,255,42,0.15)';
+      btnEn.onclick=function(){
+        try{var s=JSON.parse(localStorage.getItem("dice_tweaks")||"{}");s.lang="en";localStorage.setItem("dice_tweaks",JSON.stringify(s));}catch(e){}
+        location.reload();
+      };
+      btnRu.onclick=function(){
+        try{var s=JSON.parse(localStorage.getItem("dice_tweaks")||"{}");s.lang="ru";localStorage.setItem("dice_tweaks",JSON.stringify(s));}catch(e){}
+        location.reload();
+      };
+      row.appendChild(label);row.appendChild(btnEn);row.appendChild(btnRu);
+      settingsPanel.appendChild(row);
+      return true;
+    }
+
+    // Apply translation periodically (React re-renders)
+    var translated=false;
+    setInterval(function(){
+      if(getLang()==='ru'){
+        applyTranslation();
+      }
+      addLangToggle();
+    },1500);
+    // Initial with delay
+    setTimeout(function(){applyTranslation();addLangToggle();},2000);
+  })();
   </script>
   <script>
   // Floating draggable Roll Dice button + shrink settings gear
@@ -50,7 +237,8 @@
 
       // --- Create floating Roll button (same style as original) ---
       var fab=document.createElement('button');
-      fab.innerHTML='▶ ROLL DICE';
+      var lang='en';try{lang=JSON.parse(localStorage.getItem("dice_tweaks")||"{}").lang||'ru';}catch(e){}
+      fab.innerHTML=lang==='ru'?'▶ БРОСИТЬ':'▶ ROLL DICE';
       fab.id='fab-roll';
       fab.style.cssText=rollStyle+'bottom:14px;left:14px;';
       document.body.appendChild(fab);
