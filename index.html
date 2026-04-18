@@ -9,60 +9,32 @@
   document.addEventListener('DOMContentLoaded',function(){
     if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();try{Telegram.WebApp.setHeaderColor('#05080B');Telegram.WebApp.setBackgroundColor('#05080B')}catch(e){}}
   });
-  // Fix 3D dice in mobile WebView: CSS transition interpolation of
-  // rotateX(720+x) rotateY(720+y) decomposes differently in some WebView engines,
-  // causing wrong face to show. Fix: observe .die-3d transforms after roll settles
-  // and strip the +720 to use exact target rotation only.
+  // Fix 3D dice in iOS Telegram WebView.
+  // Bug: FACE_ROTATIONS[1]={x:0,y:0} + 720 offset shows f4 (4 pips) instead of f1 (1 pip).
+  // iOS WebView CSS 3D engine resolves rotateX(720)rotateY(720) as rotateX(90) (bottom face).
+  //
+  // Mapping of what iOS shows vs what should show:
+  //   Value 1: target rx=0,ry=0   → iOS shows f4 (bottom, rx=90)  → need f4 to have 1 pip
+  //   Value 2: target rx=0,ry=-90 → iOS shows f5 (left, ry=-90)   → OK (f2→rotateY(90)→f5)
+  //   Value 3: target rx=-90,ry=0 → iOS shows f1 (front, rx=0)    → need f1 to have 3 pips
+  //   Value 4: target rx=90,ry=0  → iOS shows f6 (back, rx=180)   → need f6 to have 4 pips
+  //   Value 5: target rx=0,ry=90  → iOS shows f2 (right, ry=90)   → need f2 to have 5 pips
+  //   Value 6: target rx=180,ry=0 → iOS shows f3 (top, rx=-90)    → need f3 to have 6 pips
+  //
+  // Fix: swap CSS face positions so each face's pips match what iOS actually renders.
+  // Original: f1=front, f2=right(Y90), f3=top(X90), f4=bottom(X-90), f5=left(Y-90), f6=back(X180)
+  // Swapped:  f1→where f3 was, f3→where f6 was, f6→where f4 was, f4→where f1 was, f2→where f5 was, f5→where f2 was
   (function(){
-    var FR = {1:{x:0,y:0},2:{x:0,y:-90},3:{x:-90,y:0},4:{x:90,y:0},5:{x:0,y:90},6:{x:180,y:0}};
-    var obs = new MutationObserver(function(muts){
-      muts.forEach(function(m){
-        if(m.type !== 'attributes' || m.attributeName !== 'style') return;
-        var el = m.target;
-        if(!el.classList || !el.classList.contains('die-3d')) return;
-        if(el.classList.contains('rolling')) return;
-        var t = el.style.transform || '';
-        var mx = t.match(/rotateX\(([\-\d.]+)deg\)/);
-        var my = t.match(/rotateY\(([\-\d.]+)deg\)/);
-        if(!mx || !my) return;
-        var rx = parseFloat(mx[1]);
-        var ry = parseFloat(my[1]);
-        // Strip multiples of 360
-        var cleanX = ((rx % 360) + 360) % 360;
-        var cleanY = ((ry % 360) + 360) % 360;
-        // Normalize to match FACE_ROTATIONS range (-90 to 180)
-        if(cleanX > 180) cleanX -= 360;
-        if(cleanY > 180) cleanY -= 360;
-        // Only fix if the values have the +720 spin offset
-        if(Math.abs(rx) > 360) {
-          el.style.transition = 'none';
-          el.style.transform = 'rotateX('+cleanX+'deg) rotateY('+cleanY+'deg) rotateZ(0deg)';
-          // Re-enable transition after a frame
-          requestAnimationFrame(function(){
-            requestAnimationFrame(function(){
-              el.style.transition = '';
-            });
-          });
-        }
-      });
-    });
-    // Start observing after bundle unpacks
-    var waitForApp = setInterval(function(){
-      var dice = document.querySelectorAll('.die-3d-wrap');
-      if(dice.length > 0) {
-        clearInterval(waitForApp);
-        dice.forEach(function(wrap){
-          var die = wrap.querySelector('.die-3d');
-          if(die) obs.observe(die, {attributes:true, attributeFilter:['style']});
-        });
-        // Also observe future dice
-        new MutationObserver(function(){
-          document.querySelectorAll('.die-3d').forEach(function(die){
-            obs.observe(die, {attributes:true, attributeFilter:['style']});
-          });
-        }).observe(document.body, {childList:true, subtree:true});
-      }
-    }, 200);
+    var s = document.createElement('style');
+    s.textContent = [
+      '.die-3d .face.f1 { transform: rotateX(90deg) translateZ(47px) !important; }',
+      '.die-3d .face.f2 { transform: rotateY(-90deg) translateZ(47px) !important; }',
+      '.die-3d .face.f3 { transform: rotateX(180deg) translateZ(47px) !important; }',
+      '.die-3d .face.f4 { transform: translateZ(47px) !important; }',
+      '.die-3d .face.f5 { transform: rotateY(90deg) translateZ(47px) !important; }',
+      '.die-3d .face.f6 { transform: rotateX(-90deg) translateZ(47px) !important; }'
+    ].join('\n');
+    document.head.appendChild(s);
   })();
   </script>
   <style>
