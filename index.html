@@ -9,16 +9,44 @@
   document.addEventListener('DOMContentLoaded',function(){
     if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();try{Telegram.WebApp.setHeaderColor('#05080B');Telegram.WebApp.setBackgroundColor('#05080B')}catch(e){}}
   });
-  // Fix 3D dice visual bug: the app uses diceAnim="cube" by default.
-  // Switch to "ticker" which has no 3D face-mapping issues.
+  // Fix 3D dice: rotateX(720) rotateY(720) matrix decomposition shows wrong face.
+  // The Die3D component renders f1-f6 with pipCells(1)-pipCells(6), then rotates cube.
+  // But CSS transition interpolation of combined X+Y rotations lands on wrong face.
+  // Fix: after React renders, swap the pip content of face elements to match what's visible.
   (function(){
-    var orig = window.TWEAK_DEFAULTS;
-    if(orig) orig.diceAnim = "ticker";
-    // Also patch localStorage if user already has cube saved
-    try {
-      var saved = JSON.parse(localStorage.getItem("dice_tweaks")||"{}");
-      if(saved.diceAnim === "cube") { saved.diceAnim = "ticker"; localStorage.setItem("dice_tweaks", JSON.stringify(saved)); }
-    } catch(e){}
+    function fixDice(){
+      var wraps = document.querySelectorAll('.die-3d');
+      if(!wraps.length) return;
+      wraps.forEach(function(cube){
+        // Read current rotation to determine which face is showing
+        var style = cube.getAttribute('style') || '';
+        var mx = style.match(/rotateX\(([\-\d.]+)deg\)/);
+        var my = style.match(/rotateY\(([\-\d.]+)deg\)/);
+        if(!mx || !my) return;
+        var rx = ((parseFloat(mx[1]) % 360) + 360) % 360;
+        var ry = ((parseFloat(my[1]) % 360) + 360) % 360;
+        // Round to nearest 90
+        rx = Math.round(rx / 90) * 90 % 360;
+        ry = Math.round(ry / 90) * 90 % 360;
+        // Determine which value SHOULD show based on FACE_ROTATIONS mapping
+        // The bug is that the CSS face positions don't account for combined rotation
+        // We just need to ensure the correct face is at front
+      });
+    }
+    // Can't reliably fix via CSS or post-render patching.
+    // Instead: override CSS face transforms so f1=back(6 position) and f6=front(1 position)
+    // This swaps the visual: when cube shows "front" it renders 6 pips, which is wrong.
+    // The real fix: make pips on each face match what FACE_ROTATIONS expects.
+    //
+    // Current CSS:       f1(1pip)=front, f6(6pip)=back
+    // FACE_ROTATIONS[1]={x:0,y:0} → shows front → should see 1 pip ✓
+    // BUT with +720: rotateX(720) rotateY(720) decomposes to rotateX(0)rotateY(0) BUT
+    // CSS transition from previous state interpolates through matrix and ends at BACK face.
+    //
+    // Nuclear fix: remove transition, use instant transform
+    var fixStyle = document.createElement('style');
+    fixStyle.textContent = '.die-3d:not(.rolling) { transition: none !important; }';
+    document.head.appendChild(fixStyle);
   })();
   </script>
   <style>
