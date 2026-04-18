@@ -9,32 +9,60 @@
   document.addEventListener('DOMContentLoaded',function(){
     if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();try{Telegram.WebApp.setHeaderColor('#05080B');Telegram.WebApp.setBackgroundColor('#05080B')}catch(e){}}
   });
-  // Fix 3D dice in iOS Telegram WebView.
-  // Bug: FACE_ROTATIONS[1]={x:0,y:0} + 720 offset shows f4 (4 pips) instead of f1 (1 pip).
-  // iOS WebView CSS 3D engine resolves rotateX(720)rotateY(720) as rotateX(90) (bottom face).
-  //
-  // Mapping of what iOS shows vs what should show:
-  //   Value 1: target rx=0,ry=0   → iOS shows f4 (bottom, rx=90)  → need f4 to have 1 pip
-  //   Value 2: target rx=0,ry=-90 → iOS shows f5 (left, ry=-90)   → OK (f2→rotateY(90)→f5)
-  //   Value 3: target rx=-90,ry=0 → iOS shows f1 (front, rx=0)    → need f1 to have 3 pips
-  //   Value 4: target rx=90,ry=0  → iOS shows f6 (back, rx=180)   → need f6 to have 4 pips
-  //   Value 5: target rx=0,ry=90  → iOS shows f2 (right, ry=90)   → need f2 to have 5 pips
-  //   Value 6: target rx=180,ry=0 → iOS shows f3 (top, rx=-90)    → need f3 to have 6 pips
-  //
-  // Fix: swap CSS face positions so each face's pips match what iOS actually renders.
-  // Original: f1=front, f2=right(Y90), f3=top(X90), f4=bottom(X-90), f5=left(Y-90), f6=back(X180)
-  // Swapped:  f1→where f3 was, f3→where f6 was, f6→where f4 was, f4→where f1 was, f2→where f5 was, f5→where f2 was
+  // Fix: iOS WebView renders wrong 3D cube faces.
+  // Solution: hide the 3D cube, overlay flat 2D pips that always match the actual value.
   (function(){
-    var s = document.createElement('style');
-    s.textContent = [
-      '.die-3d .face.f1 { transform: rotateX(90deg) translateZ(47px) !important; }',
-      '.die-3d .face.f2 { transform: rotateY(-90deg) translateZ(47px) !important; }',
-      '.die-3d .face.f3 { transform: rotateX(180deg) translateZ(47px) !important; }',
-      '.die-3d .face.f4 { transform: translateZ(47px) !important; }',
-      '.die-3d .face.f5 { transform: rotateY(90deg) translateZ(47px) !important; }',
-      '.die-3d .face.f6 { transform: rotateX(-90deg) translateZ(47px) !important; }'
-    ].join('\n');
-    document.head.appendChild(s);
+    var style = document.createElement('style');
+    style.textContent = [
+      '.die-3d-wrap { position: relative !important; }',
+      '.die-3d { visibility: hidden !important; }',
+      '.die-flat {',
+      '  position: absolute; inset: 0; display: grid; place-items: center;',
+      '  width: 94px; height: 94px; border-radius: 8px;',
+      '  border: 1px solid var(--card-border, rgba(77,255,42,0.25));',
+      '  background: rgba(13,26,13,0.55);',
+      '}',
+      '.die-flat .pg {',
+      '  display: grid; grid-template: repeat(3,1fr)/repeat(3,1fr);',
+      '  width: 56px; height: 56px; place-items: center;',
+      '}',
+      '.die-flat .dp {',
+      '  width: 13px; height: 13px; border-radius: 50%;',
+      '  background: var(--phosphor, #E8F4FF);',
+      '  box-shadow: 0 0 6px var(--phosphor-50, rgba(232,244,255,0.5));',
+      '}',
+      '.die-flat .dp.off { background: transparent; box-shadow: none; }'
+    ].join('\\n');
+    document.head.appendChild(style);
+    var PP = {
+      1:[0,0,0,0,1,0,0,0,0], 2:[0,0,1,0,0,0,1,0,0], 3:[0,0,1,0,1,0,1,0,0],
+      4:[1,0,1,0,0,0,1,0,1], 5:[1,0,1,0,1,0,1,0,1], 6:[1,0,1,1,0,1,1,0,1]
+    };
+    function mkFace(v){
+      var d=document.createElement('div');d.className='die-flat';d.dataset.v=v;
+      var g=document.createElement('div');g.className='pg';
+      (PP[v]||PP[1]).forEach(function(on){
+        var p=document.createElement('div');p.className=on?'dp':'dp off';g.appendChild(p);
+      });
+      d.appendChild(g);return d;
+    }
+    var lastD1=0,lastD2=0;
+    setInterval(function(){
+      var wraps=document.querySelectorAll('.die-3d-wrap');
+      if(!wraps.length) return;
+      var rows=document.querySelectorAll('table tbody tr');
+      if(!rows.length||!rows[0].cells||rows[0].cells.length<2) return;
+      var txt=rows[0].cells[1]?rows[0].cells[1].textContent:'';
+      var m=txt.match(/\[(\d)\]\[(\d)\]/);
+      if(!m) return;
+      var d1=parseInt(m[1]),d2=parseInt(m[2]);
+      if(d1===lastD1&&d2===lastD2) return;
+      lastD1=d1;lastD2=d2;
+      wraps.forEach(function(w,i){
+        var old=w.querySelector('.die-flat');if(old)old.remove();
+        w.appendChild(mkFace(i===0?d1:d2));
+      });
+    },150);
   })();
   </script>
   <style>
