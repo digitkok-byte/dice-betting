@@ -37,11 +37,22 @@
         'padding:8px 14px;display:flex;align-items:center;justify-content:center;'+
         'letter-spacing:1px;text-transform:uppercase;';
 
-      // --- Create floating Roll button (large, round) ---
+      // --- Get original Roll button computed style ---
+      var ocs=getComputedStyle(origRoll);
+      var rollStyle='position:fixed;z-index:9990;cursor:pointer;touch-action:none;user-select:none;'+
+        'font-family:'+ocs.fontFamily+';font-weight:'+ocs.fontWeight+';font-size:'+ocs.fontSize+';'+
+        'background:'+ocs.backgroundColor+';color:'+ocs.color+';'+
+        'border:'+ocs.border+';border-radius:'+ocs.borderRadius+';'+
+        'box-shadow:'+ocs.boxShadow+';'+
+        'padding:'+ocs.paddingTop+' '+ocs.paddingRight+';'+
+        'display:flex;align-items:center;justify-content:center;gap:8px;'+
+        'letter-spacing:'+ocs.letterSpacing+';text-transform:uppercase;white-space:nowrap;';
+
+      // --- Create floating Roll button (same style as original) ---
       var fab=document.createElement('button');
-      fab.textContent='▶ ROLL';
+      fab.innerHTML='▶ ROLL DICE';
       fab.id='fab-roll';
-      fab.style.cssText=fabCSS+'bottom:60px;right:14px;width:72px;height:72px;border-radius:50%;font-size:14px;padding:0;';
+      fab.style.cssText=rollStyle+'bottom:14px;left:14px;';
       document.body.appendChild(fab);
 
       fab.addEventListener('click',function(e){
@@ -49,7 +60,7 @@
         if(origRoll) origRoll.click();
       });
 
-      // --- Restyle settings gear (small, round) ---
+      // --- Settings gear (small, round, bottom-right) ---
       if(origSettings){
         origSettings.style.cssText+=';'+fabCSS+'bottom:14px;right:14px;width:36px;height:36px;border-radius:50%;font-size:16px;padding:0;';
         origSettings.textContent='⚙';
