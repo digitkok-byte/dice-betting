@@ -29,31 +29,30 @@
 
       if(!origRoll) return;
 
+      // Shared style matching the original Roll Dice button
+      var fabCSS='position:fixed;z-index:9990;cursor:pointer;touch-action:none;user-select:none;'+
+        'font-family:VT323,ui-monospace,monospace;font-weight:700;font-size:13px;'+
+        'background:#E8F4FF;color:#0a140a;border:1px solid #E8F4FF;border-radius:5px;'+
+        'box-shadow:0 0 12px rgba(77,255,42,0.45),0 2px 8px rgba(0,0,0,0.5);'+
+        'padding:8px 14px;display:flex;align-items:center;justify-content:center;'+
+        'letter-spacing:1px;text-transform:uppercase;';
+
       // --- Create floating Roll button ---
       var fab=document.createElement('button');
-      fab.textContent='▶';
+      fab.textContent='▶ ROLL';
       fab.id='fab-roll';
-      fab.style.cssText='position:fixed;bottom:80px;right:16px;width:44px;height:44px;border-radius:50%;'+
-        'background:var(--phosphor,#4DFF2A);color:#05080B;border:none;font-size:16px;font-weight:900;'+
-        'z-index:9990;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,0.5);touch-action:none;'+
-        'display:flex;align-items:center;justify-content:center;user-select:none;';
+      fab.style.cssText=fabCSS+'bottom:60px;right:14px;';
       document.body.appendChild(fab);
 
-      // Click triggers original Roll
       fab.addEventListener('click',function(e){
         if(fab._dragged) return;
         if(origRoll) origRoll.click();
       });
 
-      // --- Shrink settings gear ---
+      // --- Restyle settings gear to match ---
       if(origSettings){
-        origSettings.style.width='44px';
-        origSettings.style.height='44px';
-        origSettings.style.fontSize='18px';
-        origSettings.style.minWidth='44px';
-        origSettings.style.minHeight='44px';
-        origSettings.style.padding='0';
-        // Make it draggable too
+        origSettings.style.cssText+=';'+fabCSS+'bottom:14px;right:14px;font-size:16px;padding:6px 10px;';
+        origSettings.textContent='⚙';
         makeDraggable(origSettings);
       }
 
