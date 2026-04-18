@@ -35,7 +35,7 @@
     if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();
       try{Telegram.WebApp.setHeaderColor('#05080B');Telegram.WebApp.setBackgroundColor('#05080B')}catch(e){}}
 
-    // Real balance from URL params — override app balance
+    // Real balance from URL params
     var params = new URLSearchParams(window.location.search);
     var realBalance = parseInt(params.get('balance') || '0', 10);
 
@@ -47,19 +47,49 @@
     document.body.prepend(bar);
     document.body.style.paddingTop = '40px';
 
-    // Force app balance to match real balance
+    // Override app balance: replace $xxx with ₽ real balance everywhere
     window.__REAL_BALANCE = realBalance;
+    var balStr = realBalance.toLocaleString('ru-RU') + ' ₽';
+
     function forceBalance(){
-      // Find .balance-hero element and set its value
+      // Override main balance display
+      var hero = document.querySelector('.balance-hero');
+      if(hero && hero.textContent.indexOf('₽') === -1){
+        hero.textContent = balStr;
+        hero.style.fontSize = hero.style.fontSize || '48px';
+      }
+      // Override session P/L label
+      var deltas = document.querySelectorAll('.balance-delta');
+      deltas.forEach(function(d){ d.style.display = 'none'; });
+      // Hide +500 FUNDS button — balance managed by admin
+      var btns = document.querySelectorAll('button');
+      btns.forEach(function(b){
+        var t = b.textContent.trim();
+        if(t === '+500 FUNDS' || t === '+500' || t === 'RESET' || t === 'СБРОС'){
+          b.style.display = 'none';
+        }
+      });
+    }
+
+    // MutationObserver for React re-renders
+    var obs = new MutationObserver(forceBalance);
+    function startObserver(){
       var hero = document.querySelector('.balance-hero');
       if(hero){
-        var formatted = realBalance.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-        hero.textContent = '$' + formatted;
+        forceBalance();
+        obs.observe(hero, {childList:true, characterData:true, subtree:true});
+        // Also observe parent for React unmount/remount
+        if(hero.parentElement) obs.observe(hero.parentElement, {childList:true, subtree:true});
       }
     }
-    // Run periodically to override React re-renders
-    setInterval(forceBalance, 500);
-    setTimeout(forceBalance, 2000);
+    // Retry until React renders
+    var retries = 0;
+    var initInterval = setInterval(function(){
+      startObserver();
+      forceBalance();
+      retries++;
+      if(retries > 60) clearInterval(initInterval);
+    }, 300);
   });
   </script>
   <script>
