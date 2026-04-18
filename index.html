@@ -2,7 +2,114 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>DICE TERMINAL // v1.0</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded',function(){
+    if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();
+      try{Telegram.WebApp.setHeaderColor('#05080B');Telegram.WebApp.setBackgroundColor('#05080B')}catch(e){}}
+  });
+  </script>
+  <script>
+  // Floating draggable Roll Dice button + shrink settings gear
+  (function(){
+    function init(){
+      // Find original Roll Dice button and Settings button
+      var origRoll=null,origSettings=null;
+      var btns=document.querySelectorAll('button');
+      btns.forEach(function(b){
+        if(b.textContent.indexOf('ROLL DICE')>-1) origRoll=b;
+      });
+      // Settings = the ⚙ fab button
+      var allEls=document.querySelectorAll('button');
+      allEls.forEach(function(b){
+        if(b.textContent.trim()==='⚙') origSettings=b;
+      });
+
+      if(!origRoll) return;
+
+      // --- Create floating Roll button ---
+      var fab=document.createElement('button');
+      fab.textContent='▶';
+      fab.id='fab-roll';
+      fab.style.cssText='position:fixed;bottom:80px;right:16px;width:44px;height:44px;border-radius:50%;'+
+        'background:var(--phosphor,#4DFF2A);color:#05080B;border:none;font-size:16px;font-weight:900;'+
+        'z-index:9990;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,0.5);touch-action:none;'+
+        'display:flex;align-items:center;justify-content:center;user-select:none;';
+      document.body.appendChild(fab);
+
+      // Click triggers original Roll
+      fab.addEventListener('click',function(e){
+        if(fab._dragged) return;
+        if(origRoll) origRoll.click();
+      });
+
+      // --- Shrink settings gear ---
+      if(origSettings){
+        origSettings.style.width='44px';
+        origSettings.style.height='44px';
+        origSettings.style.fontSize='18px';
+        origSettings.style.minWidth='44px';
+        origSettings.style.minHeight='44px';
+        origSettings.style.padding='0';
+        // Make it draggable too
+        makeDraggable(origSettings);
+      }
+
+      // --- Draggable logic ---
+      makeDraggable(fab);
+
+      function makeDraggable(el){
+        var startX,startY,elX,elY,dragging=false,moved=false;
+        el.addEventListener('touchstart',function(e){
+          if(e.touches.length!==1) return;
+          dragging=true;moved=false;el._dragged=false;
+          var t=e.touches[0];
+          var rect=el.getBoundingClientRect();
+          startX=t.clientX;startY=t.clientY;
+          elX=rect.left;elY=rect.top;
+          el.style.transition='none';
+        },{passive:true});
+
+        el.addEventListener('touchmove',function(e){
+          if(!dragging) return;
+          var t=e.touches[0];
+          var dx=t.clientX-startX,dy=t.clientY-startY;
+          if(Math.abs(dx)>5||Math.abs(dy)>5) moved=true;
+          if(!moved) return;
+          el._dragged=true;
+          var nx=elX+dx,ny=elY+dy;
+          // Clamp to viewport
+          nx=Math.max(0,Math.min(window.innerWidth-el.offsetWidth,nx));
+          ny=Math.max(0,Math.min(window.innerHeight-el.offsetHeight,ny));
+          el.style.left=nx+'px';
+          el.style.top=ny+'px';
+          el.style.right='auto';
+          el.style.bottom='auto';
+          el.style.position='fixed';
+          e.preventDefault();
+        },{passive:false});
+
+        el.addEventListener('touchend',function(){
+          dragging=false;
+          el.style.transition='';
+          setTimeout(function(){el._dragged=false;},100);
+        },{passive:true});
+      }
+    }
+
+    // Wait for bundle to unpack and React to render
+    var tries=0;
+    var wait=setInterval(function(){
+      tries++;
+      var btns=document.querySelectorAll('button');
+      var found=false;
+      btns.forEach(function(b){if(b.textContent.indexOf('ROLL DICE')>-1) found=true;});
+      if(found||tries>100){clearInterval(wait);if(found) setTimeout(init,300);}
+    },200);
+  })();
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #05080B; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
