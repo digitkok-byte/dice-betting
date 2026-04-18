@@ -34,6 +34,19 @@
   document.addEventListener('DOMContentLoaded',function(){
     if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();
       try{Telegram.WebApp.setHeaderColor('#05080B');Telegram.WebApp.setBackgroundColor('#05080B')}catch(e){}}
+
+    // Real balance overlay from URL params
+    var params = new URLSearchParams(window.location.search);
+    var realBalance = params.get('balance');
+    if(realBalance !== null){
+      var bar = document.createElement('div');
+      bar.id = 'real-balance-bar';
+      bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99998;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;background:linear-gradient(135deg,rgba(5,8,11,0.95),rgba(15,25,15,0.95));border-bottom:1px solid rgba(77,255,42,0.25);backdrop-filter:blur(10px);font-family:monospace;';
+      bar.innerHTML = '<span style="color:rgba(77,255,42,0.6);font-size:11px;text-transform:uppercase;letter-spacing:2px;">Счёт</span><span style="color:#4dff2a;font-size:16px;font-weight:bold;text-shadow:0 0 8px rgba(77,255,42,0.4);">' + parseInt(realBalance).toLocaleString('ru-RU') + ' ₽</span>';
+      document.body.prepend(bar);
+      // Offset content
+      document.body.style.paddingTop = '40px';
+    }
   });
   </script>
   <script>
